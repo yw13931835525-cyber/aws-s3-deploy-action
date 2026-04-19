@@ -1,0 +1,91 @@
+name: 'AWS S3 Deploy Action'
+description: 'Deploy static files to AWS S3 with intelligent caching, CloudFront invalidation, and gzip/brotli support'
+author: 'yw13931835525-cyber'
+branding:
+  color: 'orange'
+  icon: 'cloud'
+inputs:
+  aws-access-key-id:
+    description: 'AWS Access Key ID'
+    required: true
+  aws-secret-access-key:
+    description: 'AWS Secret Access Key'
+    required: true
+  aws-region:
+    description: 'AWS region (e.g., us-east-1)'
+    required: true
+    default: 'us-east-1'
+  s3-bucket:
+    description: 'S3 bucket name'
+    required: true
+  s3-prefix:
+    description: 'S3 key prefix/path (e.g., deploy/)'
+    required: false
+    default: ''
+  source-dir:
+    description: 'Local directory to upload'
+    required: false
+    default: 'dist'
+  delete-removed:
+    description: 'Delete files in S3 not present locally'
+    required: false
+    default: 'true'
+  gzip:
+    description: 'Enable gzip compression'
+    required: false
+    default: 'false'
+  brotli:
+    description: 'Enable brotli compression (overrides gzip)'
+    required: false
+    default: 'false'
+  cache-control:
+    description: 'Default Cache-Control header (e.g., "max-age=31536000, immutable")'
+    required: false
+    default: 'max-age=31536000'
+  cache-assets:
+    description: 'Pattern for immutable cache assets (e.g., "**/static/**,**/*.chunk.js")'
+    required: false
+    default: ''
+  cloudfront-distribution-id:
+    description: 'CloudFront distribution ID for invalidation'
+    required: false
+    default: ''
+  cloudfront-paths:
+    description: 'Paths to invalidate in CloudFront (e.g., "/*")'
+    required: false
+    default: '/*'
+  dry-run:
+    description: 'Simulate upload without making changes'
+    required: false
+    default: 'false'
+  extra-args:
+    description: 'Extra s3 sync arguments (e.g., "--exclude \"*.map\"")'
+    required: false
+    default: ''
+outputs:
+  bucket-url:
+    description: 'URL of deployed content'
+  invalidated-paths:
+    description: 'Number of CloudFront paths invalidated'
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Configure AWS credentials'
+      shell: bash
+      run: '${{ github.action_path }}/src/deploy.sh'
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.aws-access-key-id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws-secret-access-key }}
+        AWS_REGION: ${{ inputs.aws-region }}
+        S3_BUCKET: ${{ inputs.s3-bucket }}
+        S3_PREFIX: ${{ inputs.s3-prefix }}
+        SOURCE_DIR: ${{ inputs.source-dir }}
+        DELETE_REMOVED: ${{ inputs.delete-removed }}
+        GZIP: ${{ inputs.gzip }}
+        BROTLI: ${{ inputs.brotli }}
+        CACHE_CONTROL: ${{ inputs.cache-control }}
+        CACHE_ASSETS: ${{ inputs.cache-assets }}
+        CF_DISTRIBUTION_ID: ${{ inputs.cloudfront-distribution-id }}
+        CF_PATHS: ${{ inputs.cloudfront-paths }}
+        DRY_RUN: ${{ inputs.dry-run }}
+        EXTRA_ARGS: ${{ inputs.extra-args }}

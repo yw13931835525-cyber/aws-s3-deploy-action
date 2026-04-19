@@ -1,5 +1,9 @@
 # AWS S3 Deploy Action
 
+[![Build](https://github.com/yw13931835525-cyber/aws-s3-deploy-action/actions/workflows/test.yml/badge.svg)](https://github.com/yw13931835525-cyber/aws-s3-deploy-action/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+
 Deploy static assets to AWS S3 with built-in compression, intelligent caching, and optional CloudFront invalidation.
 
 ## Features
@@ -10,7 +14,17 @@ Deploy static assets to AWS S3 with built-in compression, intelligent caching, a
 - **Delete removed files** — optionally purge stale S3 objects
 - **CloudFront invalidation** — automatic cache busting after deploy
 - **Dry-run mode** — preview what will be uploaded
+- **Verbose logging** — debug mode for troubleshooting
 - **Custom sync args** — pass extra `aws s3 sync` flags
+
+## Installation
+
+```yaml
+- uses: actions/checkout@v4
+
+- name: Deploy to S3
+  uses: yw13931835525-cyber/aws-s3-deploy-action@v1
+```
 
 ## Usage
 
@@ -63,6 +77,8 @@ Deploy static assets to AWS S3 with built-in compression, intelligent caching, a
 
 ### Dry Run
 
+Preview what would be uploaded without making changes:
+
 ```yaml
 - name: Preview Deploy
   uses: yw13931835525-cyber/aws-s3-deploy-action@v1
@@ -73,6 +89,22 @@ Deploy static assets to AWS S3 with built-in compression, intelligent caching, a
     s3-bucket: 'my-site'
     source-dir: 'dist'
     dry-run: true
+```
+
+### Verbose Logging
+
+Enable debug output for troubleshooting:
+
+```yaml
+- name: Deploy (verbose)
+  uses: yw13931835525-cyber/aws-s3-deploy-action@v1
+  with:
+    aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    aws-region: 'us-east-1'
+    s3-bucket: 'my-site'
+    source-dir: 'dist'
+    verbose: true
 ```
 
 ## Inputs
@@ -93,6 +125,7 @@ Deploy static assets to AWS S3 with built-in compression, intelligent caching, a
 | `cloudfront-distribution-id` | ❌ | — | CloudFront distribution ID |
 | `cloudfront-paths` | ❌ | `/*` | Paths to invalidate |
 | `dry-run` | ❌ | `false` | Simulate without uploading |
+| `verbose` | ❌ | `false` | Enable verbose debug logging |
 | `extra-args` | ❌ | — | Extra `aws s3 sync` arguments |
 
 ## Outputs
@@ -136,6 +169,24 @@ The deploying IAM user needs:
   ]
 }
 ```
+
+## Troubleshooting
+
+### Source directory not found
+
+- Ensure `source-dir` points to a directory created by a previous step
+- Add a `checkout` step before deploying
+
+### CloudFront invalidation failing
+
+- Verify the distribution ID is correct
+- Check IAM permissions for `cloudfront:CreateInvalidation`
+- CloudFront propagation can take 5-10 minutes
+
+### Compression not working
+
+- Ensure gzip/brotli binaries are available on the runner
+- Only text-based assets (js, css, html, svg, xml, json, txt) are compressed
 
 ## License
 

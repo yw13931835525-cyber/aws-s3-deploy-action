@@ -1,40 +1,31 @@
-# AWS S3 Deploy Action
+# ☁️ AWS S3 Deploy Action
 
-[![Build](https://github.com/yw13931835525-cyber/aws-s3-deploy-action/actions/workflows/test.yml/badge.svg)](https://github.com/yw13931835525-cyber/aws-s3-deploy-action/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+[![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub Stars](https://img.shields.io/github/stars/yw13931835525-cyber/aws-s3-deploy-action)](https://github.com/yw13931835525-cyber/aws-s3-deploy-action/stargazers)
+[![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-Deploy static assets to AWS S3 with built-in compression, intelligent caching, and optional CloudFront invalidation.
+## What It Does
+
+Deploy static assets to AWS S3 with built-in gzip/brotli compression, intelligent cache headers, and optional CloudFront invalidation. Ships only changed files using `aws s3 sync` — fast, efficient, and production-ready.
 
 ## Features
 
-- **gzip / brotli** compression for text-based assets
-- **Intelligent cache headers** — immutable assets get `max-age=31536000, immutable`
-- **Sync or replace** — uses `aws s3 sync` for efficient delta uploads
-- **Delete removed files** — optionally purge stale S3 objects
-- **CloudFront invalidation** — automatic cache busting after deploy
-- **Dry-run mode** — preview what will be uploaded
-- **Verbose logging** — debug mode for troubleshooting
-- **Custom sync args** — pass extra `aws s3 sync` flags
+- ✅ **gzip / brotli compression** — for text-based assets (js, css, html, svg, etc.)
+- ✅ **Intelligent cache headers** — immutable assets get `max-age=31536000, immutable`
+- ✅ **Delta sync** — uses `aws s3 sync` for efficient uploads of only changed files
+- ✅ **Delete removed files** — optionally purge stale S3 objects
+- ✅ **CloudFront invalidation** — automatic cache busting after deploy
+- ✅ **Dry-run mode** — preview what will be uploaded without making changes
+- ✅ **Verbose logging** — debug mode for troubleshooting
+- ✅ **Custom sync args** — pass extra `aws s3 sync` flags
 
-## Installation
-
-```yaml
-- uses: actions/checkout@v4
-
-- name: Deploy to S3
-  uses: yw13931835525-cyber/aws-s3-deploy-action@v1
-```
-
-## Usage
-
-### Basic Deploy
+## Quick Start
 
 ```yaml
 - uses: actions/checkout@v4
 
 - name: Deploy to S3
-  uses: yw13931835525-cyber/aws-s3-deploy-action@v1
+  uses: yw13931835525-cyber/aws-s3-deploy-action@main
   with:
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -43,101 +34,73 @@ Deploy static assets to AWS S3 with built-in compression, intelligent caching, a
     source-dir: 'dist'
 ```
 
-### With CloudFront
+## Use Cases
+
+### Static Website with CloudFront
+Deploy your static site and automatically invalidate CloudFront cache so visitors see the new content immediately.
 
 ```yaml
 - name: Deploy with CloudFront
-  uses: yw13931835525-cyber/aws-s3-deploy-action@v1
+  uses: yw13931835525-cyber/aws-s3-deploy-action@main
   with:
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     aws-region: 'us-east-1'
-    s3-bucket: 'my-static-site'
+    s3-bucket: ${{ secrets.S3_BUCKET }}
     source-dir: 'dist'
     cloudfront-distribution-id: ${{ secrets.CF_DISTRIBUTION_ID }}
     cloudfront-paths: '/*'
-    cache-control: 'max-age=3600'
+    gzip: true
 ```
 
-### With Gzip + Immutable Cache
+### SPA with Immutable Asset Caching
+Deploy a single-page app with aggressive caching for hashed asset filenames.
 
 ```yaml
-- name: Deploy with gzip
-  uses: yw13931835525-cyber/aws-s3-deploy-action@v1
+- name: Deploy SPA
+  uses: yw13931835525-cyber/aws-s3-deploy-action@main
   with:
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     aws-region: 'us-east-1'
-    s3-bucket: 'my-site'
+    s3-bucket: ${{ secrets.S3_BUCKET }}
     source-dir: 'build'
     gzip: true
     cache-assets: '**/static/** **/*.chunk.js'
-    cache-control: 'max-age=86400'
+    cache-control: 'max-age=31536000, immutable'
 ```
 
-### Dry Run
-
-Preview what would be uploaded without making changes:
-
-```yaml
-- name: Preview Deploy
-  uses: yw13931835525-cyber/aws-s3-deploy-action@v1
-  with:
-    aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    aws-region: 'us-east-1'
-    s3-bucket: 'my-site'
-    source-dir: 'dist'
-    dry-run: true
-```
-
-### Verbose Logging
-
-Enable debug output for troubleshooting:
-
-```yaml
-- name: Deploy (verbose)
-  uses: yw13931835525-cyber/aws-s3-deploy-action@v1
-  with:
-    aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    aws-region: 'us-east-1'
-    s3-bucket: 'my-site'
-    source-dir: 'dist'
-    verbose: true
-```
-
-## Inputs
+## Configuration
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
-| `aws-access-key-id` | ✅ | — | AWS Access Key ID |
-| `aws-secret-access-key` | ✅ | — | AWS Secret Access Key |
-| `aws-region` | ✅ | `us-east-1` | AWS region |
-| `s3-bucket` | ✅ | — | S3 bucket name |
-| `s3-prefix` | ❌ | — | S3 key prefix (e.g., `deploy/`) |
-| `source-dir` | ❌ | `dist` | Local directory to upload |
-| `delete-removed` | ❌ | `true` | Delete S3 files not in source |
-| `gzip` | ❌ | `false` | Enable gzip compression |
-| `brotli` | ❌ | `false` | Enable brotli (overrides gzip) |
-| `cache-control` | ❌ | `max-age=31536000` | Default Cache-Control header |
-| `cache-assets` | ❌ | — | Glob pattern for immutable assets |
-| `cloudfront-distribution-id` | ❌ | — | CloudFront distribution ID |
-| `cloudfront-paths` | ❌ | `/*` | Paths to invalidate |
-| `dry-run` | ❌ | `false` | Simulate without uploading |
-| `verbose` | ❌ | `false` | Enable verbose debug logging |
-| `extra-args` | ❌ | — | Extra `aws s3 sync` arguments |
+| `aws-access-key-id` | **Yes** | — | AWS Access Key ID |
+| `aws-secret-access-key` | **Yes** | — | AWS Secret Access Key |
+| `aws-region` | **Yes** | `us-east-1` | AWS region |
+| `s3-bucket` | **Yes** | — | S3 bucket name |
+| `s3-prefix` | No | — | S3 key prefix (e.g., `deploy/`) |
+| `source-dir` | No | `dist` | Local directory to upload |
+| `delete-removed` | No | `true` | Delete S3 files not in source |
+| `gzip` | No | `false` | Enable gzip compression |
+| `brotli` | No | `false` | Enable brotli (overrides gzip) |
+| `cache-control` | No | `max-age=31536000` | Default Cache-Control header |
+| `cache-assets` | No | — | Glob pattern for immutable assets |
+| `cloudfront-distribution-id` | No | — | CloudFront distribution ID |
+| `cloudfront-paths` | No | `/*` | Paths to invalidate |
+| `dry-run` | No | `false` | Simulate without uploading |
+| `verbose` | No | `false` | Enable verbose debug logging |
+| `extra-args` | No | — | Extra `aws s3 sync` arguments |
 
 ## Outputs
 
 | Output | Description |
 |--------|-------------|
 | `bucket-url` | Full URL of deployed content |
-| `invalidated-paths` | CloudFront invalidation paths |
+| `invalidated-paths` | Number of CloudFront paths invalidated |
 
 ## IAM Policy
 
-The deploying IAM user needs:
+Your IAM user needs these permissions:
 
 ```json
 {
@@ -146,48 +109,40 @@ The deploying IAM user needs:
     {
       "Sid": "S3Deploy",
       "Effect": "Allow",
-      "Action": [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:DeleteObject",
-        "s3:ListBucket"
-      ],
-      "Resource": [
-        "arn:aws:s3:::my-static-site/*",
-        "arn:aws:s3:::my-static-site"
-      ]
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject", "s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::my-static-site/*", "arn:aws:s3:::my-static-site"]
     },
     {
       "Sid": "CloudFrontInvalidation",
       "Effect": "Allow",
-      "Action": [
-        "cloudfront:CreateInvalidation",
-        "cloudfront:GetInvalidation"
-      ],
+      "Action": ["cloudfront:CreateInvalidation", "cloudfront:GetInvalidation"],
       "Resource": "arn:aws:cloudfront::123456789:distribution/ABCDEF"
     }
   ]
 }
 ```
 
+## Pro Version
+
+Get advanced features:
+- Incremental deploys with fine-grained invalidation
+- Multi-environment deployments (staging, production)
+- Priority support
+
+👉 [Get Pro License](https://hbhsgr.com)
+
 ## Troubleshooting
 
-### Source directory not found
-
-- Ensure `source-dir` points to a directory created by a previous step
-- Add a `checkout` step before deploying
-
-### CloudFront invalidation failing
-
-- Verify the distribution ID is correct
-- Check IAM permissions for `cloudfront:CreateInvalidation`
-- CloudFront propagation can take 5-10 minutes
-
-### Compression not working
-
-- Ensure gzip/brotli binaries are available on the runner
-- Only text-based assets (js, css, html, svg, xml, json, txt) are compressed
+| Issue | Solution |
+|-------|----------|
+| Source directory not found | Ensure `source-dir` points to a directory created by a previous step |
+| CloudFront invalidation failing | Verify distribution ID and IAM permissions |
+| Compression not working | Only text-based assets (js, css, html, svg, xml, json, txt) are compressed |
 
 ## License
 
-MIT © yw13931835525-cyber
+MIT License - Free for personal and commercial use
+
+## Contributing
+
+Contributions welcome! Please read our Contributing Guidelines.
